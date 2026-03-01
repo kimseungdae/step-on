@@ -1,0 +1,79 @@
+{
+  "name": "step-on",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Animated step-by-step column arithmetic for education. Generates Lottie animations for addition, subtraction, multiplication, and division.",
+  "main": "./dist-lib/index.js",
+  "module": "./dist-lib/index.js",
+  "types": "./dist-lib/types/lib.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist-lib/index.js",
+      "types": "./dist-lib/types/lib.d.ts"
+    },
+    "./core": {
+      "import": "./dist-lib/core.js",
+      "types": "./dist-lib/types/core/index.d.ts"
+    }
+  },
+  "files": [
+    "dist-lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "math",
+    "arithmetic",
+    "animation",
+    "lottie",
+    "education",
+    "column-arithmetic",
+    "addition",
+    "subtraction",
+    "multiplication",
+    "division",
+    "carry",
+    "borrow",
+    "step-by-step"
+  ],
+  "author": "kimseungdae <kocacolla@gmail.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kimseungdae/step-on.git"
+  },
+  "homepage": "https://github.com/kimseungdae/step-on#readme",
+  "bugs": {
+    "url": "https://github.com/kimseungdae/step-on/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "build:lib": "vite build --config vite.config.lib.ts && vue-tsc --project tsconfig.lib.json",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build:lib"
+  },
+  "peerDependencies": {
+    "lottie-web": "^5.12.0",
+    "vue": "^3.3.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/tsconfig": "^0.8.1",
+    "lottie-web": "^5.12.2",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "vue": "^3.3.0",
+    "vue-router": "^4.6.4",
+    "vue-tsc": "^3.1.5"
+  }
+}
