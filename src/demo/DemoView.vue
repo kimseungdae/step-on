@@ -18,16 +18,37 @@
         <label>B</label>
         <input v-model.number="b" type="number" min="1" max="999" />
       </div>
-      <button @click="generate">Generate</button>
+      <button @click="run">Generate</button>
     </div>
 
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-if="animation" class="player-wrapper">
-      <StepPlayer :animation="animation" :key="animKey" />
+    <div v-if="genResult" class="player-wrapper">
+      <StepPlayer
+        ref="player"
+        :animation="genResult.animation"
+        :steps="genResult.steps"
+        :key="animKey"
+        @step-change="onStepChange"
+      />
       <div class="info">
-        <span>{{ a }} {{ op }} {{ b }} = {{ result }}</span>
-        <span class="meta">{{ animation.layers.length }} layers · {{ animation.op }} frames</span>
+        <span>{{ a }} {{ op }} {{ b }} = {{ resultText }}</span>
+        <span class="meta">{{ genResult.animation.layers.length }} layers · {{ genResult.animation.op }} frames</span>
+      </div>
+
+      <div class="step-list">
+        <h4>Steps</h4>
+        <div
+          v-for="(s, i) in genResult.steps"
+          :key="s.id"
+          class="step-item"
+          :class="{ active: i === activeStepIdx }"
+          @click="player?.goToStep(i)"
+        >
+          <span class="step-id">{{ s.id }}</span>
+          <span class="step-tts">{{ s.ttsText }}</span>
+          <span class="step-frames">{{ s.startFrame }}–{{ s.endFrame }}</span>
+        </div>
       </div>
     </div>
 
@@ -43,21 +64,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import StepPlayer from '../vue/StepPlayer.vue';
-import { generateAddition } from '../core/addition';
-import { generateSubtraction } from '../core/subtraction';
-import { generateMultiplication } from '../core/multiplication';
-import { generateDivision } from '../core/division';
-import type { LottieAnimation } from '../core/types';
+import { generate } from '../core/generate';
+import type { GenerateResult } from '../core/dsl/step';
+import type { StepMeta } from '../core/dsl/step';
+import type { Operator } from '../core/types';
 
 const a = ref(27);
 const b = ref(35);
-const op = ref('+');
-const animation = ref<LottieAnimation | null>(null);
-const result = ref<number | string>('');
+const op = ref<string>('+');
+const genResult = shallowRef<GenerateResult | null>(null);
+const resultText = ref<number | string>('');
 const error = ref('');
 const animKey = ref(0);
+const activeStepIdx = ref(0);
+const player = ref<InstanceType<typeof StepPlayer> | null>(null);
 
 const presets = [
   { label: '27 + 35', a: 27, b: 35, op: '+' },
@@ -70,27 +92,28 @@ const presets = [
   { label: '144 ÷ 12', a: 144, b: 12, op: '÷' },
 ];
 
-function generate() {
+function run() {
   error.value = '';
+  activeStepIdx.value = 0;
   try {
-    switch (op.value) {
-      case '+':
-        animation.value = generateAddition(a.value, b.value);
-        result.value = a.value + b.value;
-        break;
-      case '-':
-        if (a.value < b.value) { error.value = 'A must be >= B for subtraction'; return; }
-        animation.value = generateSubtraction(a.value, b.value);
-        result.value = a.value - b.value;
-        break;
-      case '×':
-        animation.value = generateMultiplication(a.value, b.value);
-        result.value = a.value * b.value;
-        break;
+    const opVal = op.value === '-' ? '-' : op.value as Operator;
+    if (opVal === '-' && a.value < b.value) {
+      error.value = 'A must be >= B for subtraction';
+      return;
+    }
+    if (opVal === '÷' && b.value === 0) {
+      error.value = 'Cannot divide by zero';
+      return;
+    }
+
+    genResult.value = generate({ a: a.value, b: b.value, op: opVal as Operator });
+
+    switch (opVal) {
+      case '+': resultText.value = a.value + b.value; break;
+      case '-': resultText.value = a.value - b.value; break;
+      case '×': resultText.value = a.value * b.value; break;
       case '÷':
-        if (b.value === 0) { error.value = 'Cannot divide by zero'; return; }
-        animation.value = generateDivision(a.value, b.value);
-        result.value = a.value % b.value === 0
+        resultText.value = a.value % b.value === 0
           ? a.value / b.value
           : `${Math.floor(a.value / b.value)} r${a.value % b.value}`;
         break;
@@ -101,14 +124,18 @@ function generate() {
   }
 }
 
+function onStepChange(_step: StepMeta, index: number) {
+  activeStepIdx.value = index;
+}
+
 function applyPreset(p: { a: number; b: number; op: string }) {
   a.value = p.a;
   b.value = p.b;
   op.value = p.op;
-  generate();
+  run();
 }
 
-generate();
+run();
 </script>
 
 <style scoped>
@@ -192,6 +219,52 @@ button:hover {
   font-weight: 400;
   font-size: 0.85rem;
   color: #6e6e73;
+}
+
+.step-list {
+  width: 100%;
+  border-top: 1px solid #e8e8ed;
+  padding-top: 12px;
+}
+
+.step-list h4 {
+  font-size: 0.9rem;
+  color: #6e6e73;
+  margin-bottom: 8px;
+}
+
+.step-item {
+  display: flex;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.step-item:hover {
+  background: #f5f5f7;
+}
+
+.step-item.active {
+  background: #e3f2fd;
+}
+
+.step-id {
+  font-weight: 600;
+  color: #0071e3;
+  min-width: 80px;
+}
+
+.step-tts {
+  flex: 1;
+  color: #1d1d1f;
+}
+
+.step-frames {
+  color: #6e6e73;
+  font-variant-numeric: tabular-nums;
 }
 
 .presets h3 {

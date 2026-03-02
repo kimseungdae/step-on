@@ -11,11 +11,16 @@ export interface Config {
   rowH: number;
   padding: number;
   fps: number;
+  fontSize: number;
+  fontFamily: string;
+  fontColor: number[];
+  carryScale: number;
   placeFrames: number;
   highlightFrames: number;
   resultFrames: number;
   carryFrames: number;
   lineFrames: number;
+  annotationFrames: number;
 }
 
 export const DEFAULT_CONFIG: Config = {
@@ -23,16 +28,22 @@ export const DEFAULT_CONFIG: Config = {
   rowH: 64,
   padding: 32,
   fps: 30,
-  placeFrames: 4,
-  highlightFrames: 8,
-  resultFrames: 6,
-  carryFrames: 10,
-  lineFrames: 4,
+  fontSize: 36,
+  fontFamily: "Arial",
+  fontColor: [0.13, 0.13, 0.13],
+  carryScale: 75,
+  placeFrames: 20,
+  highlightFrames: 30,
+  resultFrames: 24,
+  carryFrames: 36,
+  lineFrames: 12,
+  annotationFrames: 40,
 };
 
 export interface LottieKeyframe {
   t: number;
   s: number[];
+  h?: number;
   i?: { x: number[]; y: number[] };
   o?: { x: number[]; y: number[] };
 }
@@ -50,6 +61,24 @@ export interface LottieTransform {
   o: LottieProperty;
 }
 
+export interface LottieTextDoc {
+  f: string;
+  s: number;
+  t: string;
+  fc: number[];
+  j: number;
+  tr: number;
+  lh: number;
+  ls: number;
+}
+
+export interface LottieTextData {
+  d: { k: { s: LottieTextDoc; t: number }[] };
+  p: Record<string, never>;
+  m: { g: number; a: LottieProperty };
+  a: unknown[];
+}
+
 export interface LottieLayer {
   ty: number;
   nm?: string;
@@ -62,6 +91,7 @@ export interface LottieLayer {
   w?: number;
   h?: number;
   shapes?: unknown[];
+  t?: LottieTextData;
 }
 
 export interface LottieAsset {
@@ -69,6 +99,19 @@ export interface LottieAsset {
   w?: number;
   h?: number;
   layers: LottieLayer[];
+}
+
+export interface LottieFont {
+  fName: string;
+  fFamily: string;
+  fStyle: string;
+  ascent: number;
+}
+
+export interface LottieMarker {
+  tm: number;
+  cm: string;
+  dr: number;
 }
 
 export interface LottieAnimation {
@@ -81,4 +124,6 @@ export interface LottieAnimation {
   ddd: number;
   assets: LottieAsset[];
   layers: LottieLayer[];
+  fonts?: { list: LottieFont[] };
+  markers?: LottieMarker[];
 }

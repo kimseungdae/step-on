@@ -1,6 +1,6 @@
 {
   "name": "step-on",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Animated step-by-step column arithmetic for education. Generates Lottie animations for addition, subtraction, multiplication, and division.",
   "main": "./dist-lib/index.js",

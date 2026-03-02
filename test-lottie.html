@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+  <head>
+    <title>step-on Step Player</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f8f9fa;
+      }
+      h2 {
+        margin-bottom: 16px;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+      }
+      select,
+      button {
+        padding: 8px 16px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      button {
+        background: #4a90d9;
+        color: white;
+        border: none;
+      }
+      button:hover {
+        background: #357abd;
+      }
+      button:disabled {
+        background: #aaa;
+        cursor: default;
+      }
+      .player-wrap {
+        display: inline-block;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: white;
+        padding: 16px;
+      }
+      .player {
+        min-width: 200px;
+        min-height: 200px;
+      }
+      .step-info {
+        margin-top: 12px;
+        padding: 10px;
+        background: #eef;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+      .step-bar {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+      }
+      .step-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ddd;
+        transition: background 0.2s;
+      }
+      .step-dot.done {
+        background: #4a90d9;
+      }
+      .step-dot.current {
+        background: #e8a735;
+      }
+      #log {
+        font-size: 11px;
+        max-height: 150px;
+        overflow: auto;
+        background: #f5f5f5;
+        padding: 8px;
+        margin-top: 16px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>step-on: Step-by-Step Player</h2>
+    <div class="controls">
+      <select id="preset">
+        <option value="add-27-35">27 + 35 = 62 (carry)</option>
+        <option value="add-999-1">999 + 1 = 1000</option>
+        <option value="sub-100-1">100 - 1 = 99 (borrow)</option>
+        <option value="sub-500-123">500 - 123 = 377</option>
+        <option value="mul-12-34">12 x 34 = 408</option>
+        <option value="mul-99-9">99 x 9 = 891</option>
+        <option value="div-144-12">144 / 12 = 12</option>
+        <option value="div-100-5">100 / 5 = 20</option>
+      </select>
+      <button id="btnLoad">Load</button>
+      <button id="btnPrev" disabled>Prev</button>
+      <button id="btnNext" disabled>Next</button>
+      <button id="btnAutoPlay" disabled>Auto Play</button>
+      <button id="btnReset" disabled>Reset</button>
+    </div>
+    <div class="player-wrap">
+      <div id="player" class="player"></div>
+    </div>
+    <div id="stepInfo" class="step-info" style="display: none">
+      <div id="stepLabel">-</div>
+      <div class="step-bar" id="stepBar"></div>
+    </div>
+    <pre id="log"></pre>
+
+    <script type="module">
+      import { generateAddition } from "./src/core/addition.ts";
+      import { generateSubtraction } from "./src/core/subtraction.ts";
+      import { generateMultiplication } from "./src/core/multiplication.ts";
+      import { generateDivision } from "./src/core/division.ts";
+
+      const STEP_LABELS = {
+        "place-a": "Place first number",
+        "place-b": "Place second number",
+        "place-divisor": "Place divisor",
+        "place-dividend": "Place dividend",
+        line: "Draw line",
+        "line-2": "Draw sum line",
+        result: "Final result",
+        "carry-final": "Leading carry",
+        end: "Complete",
+      };
+
+      function getStepLabel(cm) {
+        if (STEP_LABELS[cm]) return STEP_LABELS[cm];
+        if (cm.startsWith("col-"))
+          return `Calculate column ${parseInt(cm.split("-")[1]) + 1}`;
+        if (cm.startsWith("partial-"))
+          return `Partial product ${parseInt(cm.split("-")[1]) + 1}`;
+        if (cm.startsWith("step-"))
+          return `Division step ${parseInt(cm.split("-")[1]) + 1}`;
+        return cm;
+      }
+
+      const log = document.getElementById("log");
+      function l(msg) {
+        log.textContent += msg + "\n";
+        console.log(msg);
+      }
+
+      const PRESETS = {
+        "add-27-35": () => generateAddition(27, 35),
+        "add-999-1": () => generateAddition(999, 1),
+        "sub-100-1": () => generateSubtraction(100, 1),
+        "sub-500-123": () => generateSubtraction(500, 123),
+        "mul-12-34": () => generateMultiplication(12, 34),
+        "mul-99-9": () => generateMultiplication(99, 9),
+        "div-144-12": () => generateDivision(144, 12),
+        "div-100-5": () => generateDivision(100, 5),
+      };
+
+      let instance = null;
+      let markers = [];
+      let currentStep = -1;
+      let autoPlayTimer = null;
+
+      const playerEl = document.getElementById("player");
+      const stepInfoEl = document.getElementById("stepInfo");
+      const stepLabelEl = document.getElementById("stepLabel");
+      const stepBarEl = document.getElementById("stepBar");
+      const btnPrev = document.getElementById("btnPrev");
+      const btnNext = document.getElementById("btnNext");
+      const btnAutoPlay = document.getElementById("btnAutoPlay");
+      const btnReset = document.getElementById("btnReset");
+
+      function updateUI() {
+        const total = markers.length;
+        btnPrev.disabled = currentStep <= 0;
+        btnNext.disabled = currentStep >= total - 1;
+        btnReset.disabled = currentStep < 0;
+        btnAutoPlay.disabled = currentStep >= total - 1;
+
+        if (currentStep >= 0) {
+          const m = markers[currentStep];
+          stepLabelEl.textContent = `Step ${currentStep + 1}/${total}: ${getStepLabel(m.cm)}`;
+        }
+
+        const dots = stepBarEl.children;
+        for (let i = 0; i < dots.length; i++) {
+          dots[i].className = "step-dot";
+          if (i < currentStep) dots[i].classList.add("done");
+          if (i === currentStep) dots[i].classList.add("current");
+        }
+      }
+
+      function buildStepBar() {
+        stepBarEl.innerHTML = "";
+        for (let i = 0; i < markers.length; i++) {
+          const dot = document.createElement("div");
+          dot.className = "step-dot";
+          dot.title = getStepLabel(markers[i].cm);
+          stepBarEl.appendChild(dot);
+        }
+      }
+
+      function playStep(idx) {
+        if (idx < 0 || idx >= markers.length) return;
+        currentStep = idx;
+        const m = markers[idx];
+        instance.playSegments([m.tm, m.tm + m.dr], true);
+        updateUI();
+        l(
+          `Step ${idx + 1}: ${getStepLabel(m.cm)} (frame ${m.tm}-${m.tm + m.dr})`,
+        );
+      }
+
+      function loadPreset() {
+        stopAutoPlay();
+        const key = document.getElementById("preset").value;
+        const gen = PRESETS[key];
+        if (!gen) return;
+
+        if (instance) {
+          instance.destroy();
+          instance = null;
+        }
+        playerEl.innerHTML = "";
+        log.textContent = "";
+
+        const animData = gen();
+        markers = animData.markers || [];
+        currentStep = -1;
+
+        l(
+          `Loaded: ${key} | layers=${animData.layers.length} markers=${markers.length} op=${animData.op}`,
+        );
+        markers.forEach((m, i) => l(`  [${i}] ${m.cm} @ ${m.tm}, dur ${m.dr}`));
+
+        instance = lottie.loadAnimation({
+          container: playerEl,
+          renderer: "svg",
+          loop: false,
+          autoplay: false,
+          animationData: JSON.parse(JSON.stringify(animData)),
+        });
+
+        instance.goToAndStop(0, true);
+        stepInfoEl.style.display = "block";
+        buildStepBar();
+
+        btnNext.disabled = false;
+        btnAutoPlay.disabled = false;
+        stepLabelEl.textContent = "Press Next to start";
+        updateUI();
+      }
+
+      function stopAutoPlay() {
+        if (autoPlayTimer) {
+          clearInterval(autoPlayTimer);
+          autoPlayTimer = null;
+          btnAutoPlay.textContent = "Auto Play";
+        }
+      }
+
+      btnNext.addEventListener("click", () => {
+        stopAutoPlay();
+        if (currentStep < markers.length - 1) {
+          playStep(currentStep + 1);
+        }
+      });
+
+      btnPrev.addEventListener("click", () => {
+        stopAutoPlay();
+        if (currentStep > 0) {
+          currentStep = currentStep - 1;
+          const endFrame = markers[currentStep].tm + markers[currentStep].dr;
+          instance.goToAndStop(endFrame, true);
+          updateUI();
+          l(
+            `Back to step ${currentStep + 1}: ${getStepLabel(markers[currentStep].cm)}`,
+          );
+        }
+      });
+
+      btnReset.addEventListener("click", () => {
+        stopAutoPlay();
+        currentStep = -1;
+        instance.goToAndStop(0, true);
+        stepLabelEl.textContent = "Press Next to start";
+        updateUI();
+        const dots = stepBarEl.children;
+        for (let i = 0; i < dots.length; i++) {
+          dots[i].className = "step-dot";
+        }
+      });
+
+      btnAutoPlay.addEventListener("click", () => {
+        if (autoPlayTimer) {
+          stopAutoPlay();
+          return;
+        }
+        btnAutoPlay.textContent = "Pause";
+        function advance() {
+          if (currentStep >= markers.length - 1) {
+            stopAutoPlay();
+            return;
+          }
+          playStep(currentStep + 1);
+        }
+        advance();
+        autoPlayTimer = setInterval(() => {
+          advance();
+        }, 1500);
+      });
+
+      document.getElementById("btnLoad").addEventListener("click", loadPreset);
+      loadPreset();
+    </script>
+  </body>
+</html>
