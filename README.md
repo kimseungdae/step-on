@@ -2,7 +2,7 @@
 
 Animated step-by-step column arithmetic for education. Generates [Lottie](https://airbnb.io/lottie/) animations with **step navigation** and **TTS** for addition, subtraction, multiplication, and division — entirely in the browser.
 
-[Demo](https://step-on.vercel.app) · [한국어](#한국어)
+[Demo](https://step-on-math.vercel.app) · [한국어](#한국어)
 
 ## Features
 
@@ -140,7 +140,7 @@ The compiler emits an intermediate DSL of atomic actions (highlight, cloneDigit,
 
 ## Demo
 
-Visit the live demo: [step-on.vercel.app](https://step-on.vercel.app)
+Visit the live demo: [step-on-math.vercel.app](https://step-on-math.vercel.app)
 
 ## Development
 

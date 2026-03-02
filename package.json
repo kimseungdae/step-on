@@ -43,7 +43,7 @@
     "type": "git",
     "url": "git+https://github.com/kimseungdae/step-on.git"
   },
-  "homepage": "https://github.com/kimseungdae/step-on#readme",
+  "homepage": "https://step-on-math.vercel.app",
   "bugs": {
     "url": "https://github.com/kimseungdae/step-on/issues"
   },
