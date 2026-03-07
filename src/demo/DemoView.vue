@@ -23,23 +23,24 @@
 
     <div v-if="error" class="error">{{ error }}</div>
 
-    <div v-if="genResult" class="player-wrapper">
+    <div v-if="prepResult" class="player-wrapper">
       <StepPlayer
         ref="player"
-        :animation="genResult.animation"
-        :steps="genResult.steps"
+        :steps="prepResult.steps"
+        :layout="prepResult.layout"
+        :config="prepResult.config"
         :key="animKey"
         @step-change="onStepChange"
       />
       <div class="info">
         <span>{{ a }} {{ op }} {{ b }} = {{ resultText }}</span>
-        <span class="meta">{{ genResult.animation.layers.length }} layers · {{ genResult.animation.op }} frames</span>
+        <span class="meta">{{ prepResult.steps.length }} steps · Canvas 2D</span>
       </div>
 
       <div class="step-list">
         <h4>Steps</h4>
         <div
-          v-for="(s, i) in genResult.steps"
+          v-for="(s, i) in prepResult.steps"
           :key="s.id"
           class="step-item"
           :class="{ active: i === activeStepIdx }"
@@ -47,7 +48,6 @@
         >
           <span class="step-id">{{ s.id }}</span>
           <span class="step-tts">{{ s.ttsText }}</span>
-          <span class="step-frames">{{ s.startFrame }}–{{ s.endFrame }}</span>
         </div>
       </div>
     </div>
@@ -66,15 +66,14 @@
 <script setup lang="ts">
 import { ref, shallowRef } from 'vue';
 import StepPlayer from '../vue/StepPlayer.vue';
-import { generate } from '../core/generate';
-import type { GenerateResult } from '../core/dsl/step';
-import type { StepMeta } from '../core/dsl/step';
+import { prepare } from '../core/generate';
+import type { PrepareResult } from '../core/generate';
 import type { Operator } from '../core/types';
 
 const a = ref(27);
 const b = ref(35);
 const op = ref<string>('+');
-const genResult = shallowRef<GenerateResult | null>(null);
+const prepResult = shallowRef<PrepareResult | null>(null);
 const resultText = ref<number | string>('');
 const error = ref('');
 const animKey = ref(0);
@@ -106,7 +105,7 @@ function run() {
       return;
     }
 
-    genResult.value = generate({ a: a.value, b: b.value, op: opVal as Operator });
+    prepResult.value = prepare({ a: a.value, b: b.value, op: opVal as Operator });
 
     switch (opVal) {
       case '+': resultText.value = a.value + b.value; break;
@@ -124,7 +123,7 @@ function run() {
   }
 }
 
-function onStepChange(_step: StepMeta, index: number) {
+function onStepChange(_id: string, index: number) {
   activeStepIdx.value = index;
 }
 
@@ -260,11 +259,6 @@ button:hover {
 .step-tts {
   flex: 1;
   color: #1d1d1f;
-}
-
-.step-frames {
-  color: #6e6e73;
-  font-variant-numeric: tabular-nums;
 }
 
 .presets h3 {

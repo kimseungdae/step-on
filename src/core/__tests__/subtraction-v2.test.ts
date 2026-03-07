@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generate } from "../generate";
+import { prepare } from "../generate";
 import { compileSubtraction } from "../compiler/subtraction";
 
 describe("compileSubtraction", () => {
@@ -61,32 +61,15 @@ describe("compileSubtraction", () => {
   });
 });
 
-describe("generate (subtraction end-to-end)", () => {
-  it("56-23 produces valid Lottie", () => {
-    const result = generate({ a: 56, b: 23, op: "-" });
-    expect(result.animation.op).toBeGreaterThan(0);
-    expect(result.animation.layers.length).toBeGreaterThan(0);
-  });
-
-  it("42-17=25 StepMeta sequential", () => {
-    const result = generate({ a: 42, b: 17, op: "-" });
-    for (let i = 1; i < result.steps.length; i++) {
-      expect(result.steps[i].startFrame).toBeGreaterThanOrEqual(
-        result.steps[i - 1].endFrame,
-      );
-    }
-  });
-
-  it("42-17=25 all layers have valid op", () => {
-    const result = generate({ a: 42, b: 17, op: "-" });
-    for (const layer of result.animation.layers) {
-      expect(layer.op).toBeGreaterThan(0);
-      expect(layer.op).toBeLessThanOrEqual(result.animation.op);
-    }
+describe("prepare (subtraction end-to-end)", () => {
+  it("56-23 produces valid PrepareResult", () => {
+    const result = prepare({ a: 56, b: 23, op: "-" });
+    expect(result.steps.length).toBeGreaterThan(0);
+    expect(result.layout.canvasWidth).toBeGreaterThan(0);
   });
 
   it("100-1=99 produces correct confirm", () => {
-    const result = generate({ a: 100, b: 1, op: "-" });
+    const result = prepare({ a: 100, b: 1, op: "-" });
     const confirm = result.steps.find((s) => s.id === "confirm")!;
     expect(confirm.ttsText).toBe("100 - 1 = 99");
   });

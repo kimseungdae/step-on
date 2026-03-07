@@ -1,16 +1,22 @@
 import type { Problem, Config } from "./types";
-import type { GenerateResult } from "./dsl/step";
+import type { CompileResult } from "./dsl/step";
 import { DEFAULT_CONFIG } from "./types";
 import { compileSteps } from "./compiler/index";
 import { createLayout } from "./layout/index";
-import { renderSteps } from "./renderer/index";
+import type { Layout } from "./layout/index";
 
-export function generate(
+export interface PrepareResult {
+  steps: CompileResult["steps"];
+  layout: Layout;
+  config: Config;
+}
+
+export function prepare(
   problem: Problem,
   config?: Partial<Config>,
-): GenerateResult {
+): PrepareResult {
   const cfg = { ...DEFAULT_CONFIG, ...config };
   const { steps, numCols, numRows } = compileSteps(problem);
   const layout = createLayout(numCols, numRows, cfg);
-  return renderSteps(steps, layout, cfg);
+  return { steps, layout, config: cfg };
 }

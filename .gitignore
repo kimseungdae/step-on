@@ -4,3 +4,5 @@ dist-lib
 *.local
 .DS_Store
 .github/
+
+.vercel

@@ -1,5 +1,4 @@
 import type { Action } from "./actions";
-import type { LottieAnimation } from "../types";
 
 export interface SubStep {
   action: Action;
@@ -21,7 +20,8 @@ export interface StepMeta {
   markerName: string;
 }
 
-export interface GenerateResult {
-  animation: LottieAnimation;
-  steps: StepMeta[];
+export interface CompileResult {
+  steps: Step[];
+  numCols: number;
+  numRows: number;
 }

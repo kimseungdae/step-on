@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { generate } from "../generate";
+import { prepare } from "../generate";
 import { compileMultiplication } from "../compiler/multiplication";
 import { compileDivision } from "../compiler/division";
 
@@ -79,37 +79,17 @@ describe("compileDivision", () => {
   });
 });
 
-describe("generate (mul/div end-to-end)", () => {
-  it("23×4 produces valid Lottie", () => {
-    const result = generate({ a: 23, b: 4, op: "×" });
-    expect(result.animation.op).toBeGreaterThan(0);
-    expect(result.animation.layers.length).toBeGreaterThan(0);
-    for (const layer of result.animation.layers) {
-      expect(layer.op).toBeGreaterThan(0);
-      expect(layer.op).toBeLessThanOrEqual(result.animation.op);
-    }
-  });
-
-  it("12×34 produces valid Lottie", () => {
-    const result = generate({ a: 12, b: 34, op: "×" });
-    expect(result.animation.op).toBeGreaterThan(0);
+describe("prepare (mul/div end-to-end)", () => {
+  it("23×4 produces valid PrepareResult", () => {
+    const result = prepare({ a: 23, b: 4, op: "×" });
     expect(result.steps.length).toBeGreaterThan(0);
+    expect(result.layout.canvasWidth).toBeGreaterThan(0);
   });
 
-  it("84÷4 produces valid Lottie", () => {
-    const result = generate({ a: 84, b: 4, op: "÷" });
-    expect(result.animation.op).toBeGreaterThan(0);
-    expect(result.animation.layers.length).toBeGreaterThan(0);
-    for (const layer of result.animation.layers) {
-      expect(layer.op).toBeGreaterThan(0);
-      expect(layer.op).toBeLessThanOrEqual(result.animation.op);
-    }
-  });
-
-  it("144÷12 produces valid Lottie", () => {
-    const result = generate({ a: 144, b: 12, op: "÷" });
-    expect(result.animation.op).toBeGreaterThan(0);
+  it("144÷12 produces valid PrepareResult", () => {
+    const result = prepare({ a: 144, b: 12, op: "÷" });
     expect(result.steps.length).toBeGreaterThan(0);
+    expect(result.layout.canvasWidth).toBeGreaterThan(0);
   });
 
   it("all 4 operations produce consistent output", () => {
@@ -120,12 +100,10 @@ describe("generate (mul/div end-to-end)", () => {
       { a: 84, b: 4, op: "÷" as const },
     ];
     for (const problem of ops) {
-      const result = generate(problem);
-      expect(result.animation.v).toBe("5.7.4");
-      expect(result.animation.fr).toBe(30);
-      expect(result.animation.op).toBeGreaterThan(0);
+      const result = prepare(problem);
+      expect(result.config.fps).toBe(30);
       expect(result.steps.length).toBeGreaterThan(0);
-      expect(result.animation.markers?.length).toBe(result.steps.length);
+      expect(result.layout.canvasWidth).toBeGreaterThan(0);
     }
   });
 });
